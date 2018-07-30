@@ -1,38 +1,19 @@
-python-vipaccess
+﻿python-vipaccess
 ================
 
-[![Build Status](https://api.travis-ci.org/dlenski/python-vipaccess.png)](https://travis-ci.org/dlenski/python-vipaccess)
+This is a fork of [@bdwyertech](https://github.com/bdwyertech/python-vipaccess)'s work, which in turn is a fork of [@cyrozap](https://github.com/cyrozap)'s [`python-vipaccess`](https://github.com/dlenski/python-vipaccess) original project.
 
-This is a fork of [@cyrozap](https://github.com/cyrozap)'s [`python-vipaccess`](https://github.com/dlenski/python-vipaccess).
+Main differences between this project and [@bdwyertech](https://github.com/bdwyertech/python-vipaccess)'s fork:
 
-Main differences:
-
-- No dependency on `qrcode` or `image` libraries; you can easily use
-  external tools such as [`qrencode`](https://github.com/fukuchi/libqrencode)
-  to convert an `otpauth://` URL to a QR code if needed, so it seems
-  unnecessary to build in this functionality.
-- Option to generate either the desktop (`VSST`) or mobile (`VSMT`)
-  version on the VIP Access tokens; as far as I can tell there is no
-  real difference between them, but some clients require one or the
-  other specifically.
-- Command-line utility is expanded to support *both* token
-  provisioning (creating a new token) and emitting codes for an
-  existing token (inspired by the command-line interface of
-  [`stoken`](https://github.com/cernekee/stoken), which handles the same functions for [RSA SecurID](https://en.wikipedia.org/wiki/RSA_SecurID) tokens
+- striped out everything that is not strictly necessary (including docker, CI, manifests, etc).
+- [pipenv](https://docs.pipenv.org/) instead of setup.py.
 
 Intro
 -----
 
-python-vipaccess is a free and open source software (FOSS)
-implementation of Symantec's VIP Access client.
+python-vipaccess is a free and open source software (FOSS) implementation of Symantec's VIP Access client.
 
-If you need to access a network which uses VIP Access for [two-factor
-authentication](https://en.wikipedia.org/wiki/Two-factor_authentication),
-but can't or don't want to use Symantec's proprietary
-applications—which are only available for Windows, MacOS, Android,
-iOS—then this is for you.
-
-As [@cyrozap](https://github.com/cyrozap) discovered in reverse-engineering the VIP Access protocol
+If you need to access a network which uses VIP Access for [two-factor authentication](https://en.wikipedia.org/wiki/Two-factor_authentication), but can't or don't want to use Symantec's proprietary applications—which are only available for Windows, MacOS, Android, iOS—then this is for you. As [@cyrozap](https://github.com/cyrozap) discovered in reverse-engineering the VIP Access protocol
 ([original blog
 post](https://www.cyrozap.com/2014/09/29/reversing-the-symantec-vip-access-provisioning-protocol)),
 Symantec VIP Access actually uses a **completely open standard**
@@ -45,62 +26,62 @@ new token.
 Dependencies
 ------------
 
--  Python 2.7, 3.3, 3.4, 3.5
 -  [`lxml`](https://pypi.python.org/pypi/lxml/3.4.0)
 -  [`oath`](https://pypi.python.org/pypi/oath/1.2)
 -  [`pycryptodome`](https://pypi.python.org/pypi/pycryptodome/3.4.7)
 -  [`requests`](https://pypi.python.org/pypi/requests/)
 
-If you have `pip` installed on your system, you can install them with
-`pip install lxml oath pycryptodome requests`.
 
-Manual
+Install
 ------
 
-If you have Docker installed, you can simply use the
-[Docker image](https://hub.docker.com/r/kayvan/vipaccess/) to run
-the `vipaccess` tool:
+1. Install pipenv (if you have not already)
+2. `$ git clone git@github.com:pconwell/python-vipaccess.git`
+3. `$ pipenv install`
+4. `$ python cli.py provision -p`
 
-```
-docker run --rm kayvan/vipaccess provision -p -t VSST
-Credential created successfully:
-	otpauth://totp/VIP%20Access:VSST1113377?secret=YOURSECRET&issuer=Symantec
-This credential expires on this date: 2020-06-05T15:26:26.585Z
-
-You will need the ID to register this credential: VSST1113377
-```
-
-And with your generated secret, use the `show` command like this:
-
-```
-docker run --rm kayvan/vipaccess show -s YOURSECRET
-935163
-```
-
-Alternatively, you can build it:
-
-1. Check out this repository by running
-   ``git clone https://github.com/dlenski/python-vipaccess.git``
-2. Switch to the ``python-vipaccess`` directory by running
-   ``cd python-vipaccess``
-3. Install the ``vipaccess`` module
-
-   -  With [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)): ``pip install .``
-   -  Without pip: ``python setup.py install``
 
 Usage
 -----
 
-(This section covers the expanded CLI options of this fork, rather than [@cyrozap](https://github.com/cyrozap)'s original version.)
+The above `$ python cli.py provision -p` command will generate a useable key that looks like this:
 
-### Provisioning a new VIP Access credential
+```
+$ python cli.py provision -p
+Generating request...
+Fetching provisioning response...
+Getting token from response...
+Decrypting token...
+Checking token...
+Credential created successfully:
+        otpauth://totp/VIP%20Access:VSST72674373?secret=F7YUK5PD3A6SFCIUFCEJ2G55KLTJL7QS&digits=6&period=30&algorithm=sha1&issuer=Symantec
+This credential expires on this date: 2021-07-29T14:46:47.928Z
 
-This is used to create a new VIP Access token: by default, it stores
-the new credential in the file `.vipaccess` in your home directory (in a
-format similar to `stoken`), but it can store to another file instead,
-or instead just print out the "token secret" string with instructions
-about how to use it.
+You will need the ID to register this credential: VSST72674373
 
+You can use oathtool to generate the same OTP codes
+as would be produced by the official VIP Access apps:
+
+    oathtool -d6 -b --totp    F7YUK5PD3A6SFCIUFCEJ2G55KLTJL7QS  # 6-digit code
+    oathtool -d6 -b --totp -v F7YUK5PD3A6SFCIUFCEJ2G55KLTJL7QS  # ... with extra information
+```
+
+The otpauth:// url can be used to generate a qrcode, for example:
+
+```
+qrencode -t ANSI256 'otpauth://totp/VIP%20Access:VSST72674373?secret=F7YUK5PD3A6SFCIUFCEJ2G55KLTJL7QS&digits=6&period=30&algorithm=sha1&issuer=Symantec'
+```
+
+You can also save the key to a file with `$ python cli.py provision -o ./tokens/example.txt` and it will save a file like this:
+
+```
+version 1
+secret ULOGV232CEXDHOBFZHHC56WD4M45XXAY
+id VSST96853489
+expiry 2021-07-29T14:48:33.889Z
+```
+
+General Usage:
 ```
 usage: vipaccess provision [-h] [-p | -o DOTFILE] [-t TOKEN_MODEL]
 
@@ -116,45 +97,14 @@ optional arguments:
                         accept one or the other.
 ```
 
-Here is an example of the output from `vipaccess provision -p`:
-
-```
-Credential created successfully:
-	otpauth://totp/VIP%20Access:VSST12345678?secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&issuer=Symantec
-This credential expires on this date: 2019-01-15T12:00:00.000Z
-
-You will need the ID to register this credential: VSST12345678
-
-You can use oathtool to generate the same OTP codes
-as would be produced by the official VIP Access apps:
-
-    oathtool -d6 -b --totp    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  # 6-digit code
-    oathtool -d6 -b --totp -v AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  # ... with extra information
-```
-
-Here is the format of the `.vipaccess` token file output from
-`vipaccess provision [-o ~/.vipaccess]`. (This file is created with
-read/write permissions *only* for the current user.)
-
-```
-version 1
-secret AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-id VSST12345678
-expiry 2019-01-15T12:00:00.000Z
-```
-
-### Using qrencode to register your credential with TOTP apps (e.g. Authy)
-
-Once you generate a token with `vipaccess provision -p`, use the `otpauth` URL
-to generate the QR code:
-
-```
-qrencode -t ANSI256 'otpauth://totp/VIP%20Access:VSSTXXXX?secret=YYYY&issuer=Symantec'
-```
-
-Scan the code into your TOTP generating app, like Authy.
 
 ### Generating access codes using an existing credential
+
+You can also generate OTP codes from saved creditials
+
+```
+$ python cli.py show -f ./tokens/example.txt
+```
 
 The `vipaccess [show]` option will also do this for you: by default it
 generates codes based on the credential in `~/.vipaccess`, but you can
@@ -173,8 +123,3 @@ optional arguments:
                         File in which the credential is stored (default
                         ~/.vipaccess
 ```
-
-As alluded to above, you can use other standard
-[OATH](https://en.wikipedia.org/wiki/Initiative_For_Open_Authentication)-based
-tools to generate the 6-digit codes identical to what Symantec's official
-apps produce.
