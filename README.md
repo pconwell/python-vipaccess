@@ -37,7 +37,9 @@ Install
 
 1. Install pipenv (if you have not already)
 2. `$ git clone git@github.com:pconwell/python-vipaccess.git`
+3. `$ cd python-vipaccess`
 3. `$ pipenv install`
+5. `$ pipenv shell`
 4. `$ python cli.py provision -p`
 
 
