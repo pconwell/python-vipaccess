@@ -4,8 +4,10 @@ import os, sys
 import argparse
 import oath
 import base64
-from vipaccess.patharg import PathType
-from vipaccess import provision as vp
+#from vipaccess.patharg import PathType
+#from vipaccess import provision as vp
+from patharg import PathType
+import provision as vp
 
 EXCL_WRITE = 'x' if sys.version_info>=(3,3) else 'wx'
 
