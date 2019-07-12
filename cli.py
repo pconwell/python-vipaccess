@@ -1,12 +1,7 @@
-from __future__ import print_function
-
 import os, sys
 import argparse
 import oath
 import base64
-#from vipaccess.patharg import PathType
-#from vipaccess import provision as vp
-from patharg import PathType
 import provision as vp
 
 EXCL_WRITE = 'x' if sys.version_info>=(3,3) else 'wx'
@@ -75,13 +70,24 @@ def provision(p, args):
         assert otp_token['algorithm']=='sha1'
         assert otp_token['period']==30
         os.umask(0o077) # stoken does this too (security)
-        with open(os.path.expanduser(args.dotfile), EXCL_WRITE) as dotfile:
-            dotfile.write('version 1\n')
-            dotfile.write('secret %s\n' % otp_secret_b32)
-            dotfile.write('id %s\n' % otp_token['id'])
-            dotfile.write('expiry %s\n' % otp_token['expiry'])
-        print('Credential created and saved successfully: ' + dotfile.name)
-        print('You will need the ID to register this credential: ' + otp_token['id'])
+        try:
+            with open(os.path.expanduser(args.dotfile), EXCL_WRITE) as dotfile:
+                dotfile.write('version 1\n')
+                dotfile.write('secret %s\n' % otp_secret_b32)
+                dotfile.write('id %s\n' % otp_token['id'])
+                dotfile.write('expiry %s\n' % otp_token['expiry'])
+                print('Credential created and saved successfully: ' + dotfile.name)
+                print('You will need the ID to register this credential: ' + otp_token['id'])
+        except FileNotFoundError:
+            print("\n***************************************************************************************")
+            print("ERROR: Attempted to save token to a location that doesn't exist!")
+            print("Either save the token to a path that exists, or manually create the path and try again.")
+            print("***************************************************************************************\n")
+        except FileExistsError:
+            print("\n*******************************************************************************************")
+            print("ERROR: Attempted to save token to a file that already exists!")
+            print("Either save the token to a different name, or manually delete the old token and try again.")
+            print("*******************************************************************************************\n")
 
 def show(p, args):
     if args.secret:
@@ -121,8 +127,9 @@ def main():
     m = pprov.add_mutually_exclusive_group()
     m.add_argument('-p', '--print', action=PrintAction, nargs=0,
                    help="Print the new credential, but don't save it to a file")
-    m.add_argument('-o', '--dotfile', type=PathType(type='file', exists=False), default=os.path.expanduser('~/.vipaccess'),
-                   help="File in which to store the new credential (default ~/.vipaccess")
+    # m.add_argument('-o', '--dotfile', type=PathType(type='file', exists=False), default=os.path.expanduser('~/.vipaccess'),
+    #                help="File in which to store the new credential (default ~/.vipaccess")
+    m.add_argument('-o', '--dotfile', default=os.path.expanduser('./tokens/.vipaccess'), help="File in which to store the new credential\n(default ./tokens/.vipaccess)")
     pprov.add_argument('-t', '--token-model', default='VSST',
                       help="VIP Access token model. Should be VSST (desktop token, default) or VSMT (mobile token). Some clients only accept one or the other.")
 
@@ -130,8 +137,8 @@ def main():
     m = pshow.add_mutually_exclusive_group()
     m.add_argument('-s', '--secret',
                    help="Specify the token secret on the command line (base32 encoded)")
-    m.add_argument('-f', '--dotfile', type=PathType(exists=True), default=os.path.expanduser('~/.vipaccess'),
-                   help="File in which the credential is stored (default ~/.vipaccess")
+    m.add_argument('-f', '--dotfile', default=os.path.expanduser('./tokens/.vipaccess'),
+                   help="File in which the credential is stored (default ./tokens/.vipaccess)")
     pshow.add_argument('-v', '--verbose', action='store_true')
     pshow.set_defaults(func=show)
 
