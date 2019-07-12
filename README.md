@@ -44,7 +44,10 @@ optional arguments:
                         accept one or the other.
 ```
 
+## Provisioning (Generating) a new key
 ### Print ID/key pair
+> `provision -p` will generate a key and print it to the terminal. No data is saved.
+
 ```
 $ pipenv shell
 $ python cli.py provision -p
@@ -77,6 +80,8 @@ qrencode -t ANSI256 'otpauth://totp/VIP%20Access:VSST72674373?secret=F7YUK5PD3A6
 ```
 
 ### Save ID/key pair to file
+> `provision -o /path/file` will generate a key and save it to the path specified.
+
 `$ python cli.py provision -o ./tokens/example.txt`
 
 This will generate a file at /tokens/example.txt. Rename the output file as you see fit.
@@ -89,9 +94,32 @@ id VSST96853489
 expiry 2021-07-29T14:48:33.889Z
 ```
 
-### Generate OTP codes from saved ID/key file
+### Specify Standard or Mobile key format
+> `provision -t [VSST|VSMT]` will generate a standard or mobile key format.
+
+Some sites may require a standard (VSST) or mobile (VSMT) format key. The only difference between the formats is the token id will either start with `VSST##########` or `VSMT##########`, otherwise the tokens are identical. If no option is specified, the token will default to standard (VSST) format.
+
+
+## Generate OTP code
+### OTP codes from existing key file
+> `show -f /path/file` will generate an OTP for the specified key file.
+
 ```
 $ python cli.py show -f ./tokens/example.txt
 756607
 ```
 
+### OTP codes from existing secret
+> `show -s SECRETKEYSTRINGHERE` will generate an OTP for the specified secret key.
+
+```
+$ python cli.py show -s ULOGV232CEXDHOBFZHHC56WD4M45XXAY
+756607
+```
+
+## Add Secret to Authenicator App
+One of the more likely use cases for this project is to generate a standard secret that can be added to any OTP app (Google Authenticator, Authy, etc) instead of being locked in to Symantec's app/token.
+
+The fastest and arguably most secure way is to just run `python cli.py provision -p` then use the provided `ID` and `secret` (it will be the long string of characters on the line that says 'oathtool'...). The `ID` will most likely be entered into whatever website or service you are setting up, and the `secret` will be added to your authenticator app.
+
+The 'safest' way would be to save the token to a file so you can access it later if needed. However, note that if you save the file, you must keep the file safe to prevent someone from stealing the information in the file. The file itself contains everything someone needs to know to steal your OTP codes.
